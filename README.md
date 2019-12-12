@@ -1,7 +1,8 @@
 # Kadena Node Installation
 
-**Note**: this guide assumes your machine is running Ubuntu, and that you have
-`sudo` privileges.
+**Note**: this guide assumes your machine is running Ubuntu, that you have
+`sudo` privileges, that you've bought a proper Domain Name and are pointing it
+at the Public IP Address of your machine.
 
 ### Installation
 
@@ -10,7 +11,7 @@ wget https://raw.githubusercontent.com/kadena-community/node-setup/master/instal
 sudo bash installnode.sh
 ```
 
-For your `hostname`, enter your Domain Name or Public IP address.
+And follow the instructions.
 
 A log of the install is stored in `/tmp/install.log` if there were any errors.
 

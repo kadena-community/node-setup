@@ -126,6 +126,8 @@ chainweb:
   # completely independent Chainweb.
   chainwebVersion: mainnet01
 
+  # The number of requests allowed per second per client to certain endpoints.
+  # If these limits are crossed, you will receive a 429 HTTP error.
   throttling:
     local: 0.1
     mining: 5
