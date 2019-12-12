@@ -267,11 +267,11 @@ cat <<EOF > /etc/systemd/system/kadena-node.service
 Description=Kadena Node
 
 [Service]
-User=root
+User=kda
 KillMode=process
 KillSignal=SIGINT
 WorkingDirectory=/home/kda
-ExecStart=/home/kda/node.sh
+ExecStart=/home/kda/chainweb-node --config-file=/home/kda/config.yaml
 Restart=always
 RestartSec=5
 LimitNOFILE=65536
@@ -292,13 +292,6 @@ if [[ "\$status_code" -ne 200 ]]; then
    systemctl daemon-reload
    systemctl restart node
 fi
-EOF
-
-touch /home/kda/node.sh
-chmod +x /home/kda/node.sh
-cat <<EOF > /home/kda/node.sh
-#!/bin/bash
-/home/kda/chainweb-node --config-file=/home/kda/config.yaml
 EOF
 
 chmod +x -R /home/kda/
@@ -327,8 +320,8 @@ cd /home/kda/.local/share/chainweb-node/mainnet01/0/
 # Remove these, in case they were already there.
 rm -rf rocksDb sqlite
 # Fetch the snapshot.
-wget https://s3.us-east-2.amazonaws.com/node-dbs.chainweb.com/db-chainweb-node-ubuntu.18.04-latest.tar.gz
-tar xvfz db-chainweb-node-ubuntu.18.04-latest.tar.gz
+wget http://node-dbs.chainweb.com/db-chainweb-node-ubuntu.18.04-latest.tar.gz
+tar xvfz db-chainweb-node-ubuntu.18.04-latest.tar.gz >> $LOG_FILE 2>&1
 systemctl start kadena-node
 clear
 
