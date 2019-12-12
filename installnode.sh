@@ -1,8 +1,8 @@
 #!/bin/bash
 
-#############################
-# Script by Thanos          #
-#############################
+###############################
+# Script by Thanos and Fosskers
+###############################
 
 LOG_FILE=/tmp/install.log
 
@@ -51,13 +51,13 @@ if [[ $EUID -ne 0 ]]; then
   exit 1
 fi
 
-
 # Print variable on a screen
 decho "Make sure you double check information before hitting enter!"
 
+# --- USER INPUT --- #
 read -e -p "Please enter your node's Domain Name: " whereami
 if [[ $whereami == "" ]]; then
-    decho "WARNING: No domain entered, exiting!"
+    decho "WARNING: No domain given, exiting!"
     exit 3
 fi
 
@@ -67,10 +67,18 @@ if [[ $publickey == "" ]]; then
     exit 3
 fi
 
-# Check for systemd
+read -e -p "Please enter your Email Address: " email
+if [[ $email == "" ]]; then
+    decho "WARNING: No email adderss given, exiting!"
+    exit 3
+fi
+
+# --- SYSTEM SETUP --- #
+
+# Check for systemd.
 systemctl --version >/dev/null 2>&1 || { decho "systemd is required. Are you using Ubuntu 18.04?" >&2; exit 1; }
 
-# Update packages
+# Update packages.
 decho "Updating system..."
 
 apt-get update -y >> $LOG_FILE 2>&1
@@ -96,7 +104,8 @@ else
   trap 'error ${LINENO}' ERR
 fi
 
-# Download Node
+# --- NODE BINARY SETUP --- #
+
 NODE=https://github.com/kadena-io/chainweb-node/releases/download/1.3.1/chainweb.8.6.5.ubuntu-18.04.1e6c76b2.tar.gz
 MINER=https://github.com/kadena-io/chainweb-miner/releases/download/v1.0.3/chainweb-miner-1.0.3-ubuntu-18.04.tar.gz
 
@@ -145,10 +154,10 @@ chainweb:
     peer:
       # Filepath to the "fullchain.pem" of the certificate of your domain.
       # If "null", this will be auto-generated.
-      certificateChainFile: null
+      certificateChainFile: /etc/letsencrypt/live/$whereami/fullchain.pem
       # Filepath to the "privkey.pem" of the certificate of your domain.
       # If "null", this will be auto-generated.
-      keyFile: null
+      keyFile: /etc/letsencrypt/live/$whereami/privkey.pem
 
       # You.
       hostaddress:
@@ -247,42 +256,37 @@ logging:
         value: local-handler
         level: info
     default: error
-
 EOF
 
-touch /etc/systemd/system/node.service
-cat <<EOF > /etc/systemd/system/node.service
+# --- SYSTEMD SETUP FOR NODE --- #
+touch /etc/systemd/system/kadena-node.service
+cat <<EOF > /etc/systemd/system/kadena-node.service
 [Unit]
-Description=Node Service
+Description=Kadena Node
 
 [Service]
 User=root
+KillMode=process
+KillSignal=SIGINT
 WorkingDirectory=/home/kda
 ExecStart=/home/kda/node.sh
 Restart=always
-RestartSec=3
+RestartSec=5
+LimitNOFILE=65536
 
 [Install]
 WantedBy=multi-user.target
 EOF
 
+# --- HEALTH CHECK --- #
 touch /home/kda/health.sh
 chmod +x /home/kda/health.sh
 cat <<EOF > /home/kda/health.sh
 #!/bin/bash
-#!/bin/bash
-status_code=\$(timeout 5s curl --write-out %{http_code} https://$whereami:443/chainweb/0.0/mainnet01/cut --silent --output /dev/null)
+status_code=\$(timeout 5s curl --write-out %{http_code} https://$whereami:443/chainweb/0.0/mainnet01/health-check --silent --output /dev/null)
 echo \$status_code
 if [[ "\$status_code" -ne 200 ]]; then
-   echo "RESTART DUE TO NO API RESULT"
-   systemctl daemon-reload
-   systemctl restart node
-fi
-
-PID=`pidof chainweb-node`
-FD=`ss -tnp | grep 443 | grep ESTAB | wc -l`
-if [[ "\$FD" -gt 10000 ]]; then
-   echo "RESTART DUE TO TOO MANY OPEN FILES"
+   echo "No response from API: Restarting the Node"
    systemctl daemon-reload
    systemctl restart node
 fi
@@ -292,47 +296,43 @@ touch /home/kda/node.sh
 chmod +x /home/kda/node.sh
 cat <<EOF > /home/kda/node.sh
 #!/bin/bash
-/home/kda/chainweb-node                \
-  --config-file /home/kda/config.yaml  \
-  --certificate-chain-file=/etc/letsencrypt/live/$whereami/fullchain.pem  \
-  --certificate-key-file=/etc/letsencrypt/live/$whereami/privkey.pem
-#  1>/home/kda/node.log 2>&1
+/home/kda/chainweb-node --config-file=/home/kda/config.yaml
 EOF
 
 chmod +x -R /home/kda/
 
-# Setup crontab
-
+# --- HEALTH CHECK CRONTAB --- #
 echo "*/5 * * * * /home/kda/health.sh >/home/kda/health.out 2>/home/kda/health.err" >> newCrontab
 crontab -u kda newCrontab >> $LOG_FILE 2>&1
 rm newCrontab >> $LOG_FILE 2>&1
 
-certbot certonly --standalone --agree-tos --register-unsafely-without-email -d $whereami  >> $LOG_FILE 2>&1
-systemctl daemon-reload
-systemctl enable node.service
-systemctl start node.service
-sleep 10
-systemctl stop node.service
+# --- DOMAIN-SPECIFIC CERTIFICATE CREATION --- #
+certbot certonly --non-interactive --agree-tos -m $email --standalone --cert-name $whereami -d $whereami >> $LOG_FILE 2>&1
 
-#Download recent Bootstrap......"
-echo "Downloading recent Bootstrap..."
+# --- ENABLE THE NODE --- #
+systemctl daemon-reload
+systemctl enable kadena-node
+
+# --- DOWNLOAD A DATABASE SNAPSHOT --- #
+echo "Downloading recent database snapshot..."
 echo "This may take a while..."
 
-sudo systemctl stop node.service
-cd ~/.local/share/chainweb-node/mainnet01/0/
-sudo rm -fr rocksDb sqlite
+# Send a stop message, just in case.
+systemctl stop kadena-node
+# No-op if it already exists.
+mkdir -p /home/kda/.local/share/chainweb-node/mainnet01/0/
+cd /home/kda/.local/share/chainweb-node/mainnet01/0/
+# Remove these, in case they were already there.
+rm -rf rocksDb sqlite
+# Fetch the snapshot.
 wget https://s3.us-east-2.amazonaws.com/node-dbs.chainweb.com/db-chainweb-node-ubuntu.18.04-latest.tar.gz
-sudo tar xvfz db-chainweb-node-ubuntu.18.04-latest.tar.gz
-sudo systemctl start node.service
+tar xvfz db-chainweb-node-ubuntu.18.04-latest.tar.gz
+systemctl start kadena-node
 clear
+
 # Installation Completed
-echo 'Installation completed...'
-echo 'Kadena Node is installed'
-echo 'Watchdogs are in place'
-echo 'Everything is automated from now on'
-echo 'Type "sudo nano /home/kda/config.yaml"'
-echo 'Change the coordination mode to "private"'
-echo 'Edit the miners section for your addresses'
-echo 'CTRL+x to save Y to confirm then "sudo systemctl restart node.service"'
-echo 'to restart it with your addresses whitelisted'
-echo 'Type "journalctl -fu node.service" to see the node log'
+echo 'Installation completed!'
+echo 'Health checks are in place, and everything is automated from now on.'
+echo 'Type "sudo nano /home/kda/config.yaml" to edit your config if necessary.'
+echo 'CTRL+x to save Y to confirm then "sudo systemctl restart kadena-node"'
+echo 'Type "journalctl -fu kadena-node" to see the node log.'
