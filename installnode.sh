@@ -91,26 +91,14 @@ apt-get install -y certbot >> $LOG_FILE 2>&1
 apt-get install -y librocksdb-dev >> $LOG_FILE 2>&1
 apt-get install -y curl >> $LOG_FILE 2>&1
 
-decho "Create user kda (if necessary)"
-
-# Deactivate trap only for this command
-trap '' ERR
-getent passwd kda > /dev/null 2&>1
-
-if [ $? -ne 0 ]; then
-  trap 'error ${LINENO}' ERR
-  adduser --disabled-password --gecos "" kda >> $LOG_FILE 2>&1
-else
-  trap 'error ${LINENO}' ERR
-fi
-
 # --- NODE BINARY SETUP --- #
 
 NODE=https://github.com/kadena-io/chainweb-node/releases/download/1.3.1/chainweb.8.6.5.ubuntu-18.04.1e6c76b2.tar.gz
 MINER=https://github.com/kadena-io/chainweb-miner/releases/download/v1.0.3/chainweb-miner-1.0.3-ubuntu-18.04.tar.gz
 
 decho 'Downloading Node...'
-cd /home/kda/
+mkdir -p /root/kda
+cd /root/kda/
 wget --no-check-certificate $NODE >> $LOG_FILE 2>&1
 tar -xvf chainweb.8.6.5.ubuntu-18.04.1e6c76b2.tar.gz >> $LOG_FILE 2>&1
 wget --no-check-certificate $MINER >> $LOG_FILE 2>&1
@@ -119,8 +107,8 @@ tar -xvf chainweb-miner-1.0.3-ubuntu-18.04.tar.gz >> $LOG_FILE 2>&1
 # Create config.yaml
 decho "Creating config files and Health check..."
 
-touch /home/kda/config.yaml
-cat << EOF > /home/kda/config.yaml
+touch /root/kda/config.yaml
+cat << EOF > /root/kda/config.yaml
 chainweb:
   # The defining value of the network. To change this means being on a
   # completely independent Chainweb.
@@ -267,11 +255,11 @@ cat <<EOF > /etc/systemd/system/kadena-node.service
 Description=Kadena Node
 
 [Service]
-User=kda
+User=root
 KillMode=process
 KillSignal=SIGINT
-WorkingDirectory=/home/kda
-ExecStart=/home/kda/chainweb-node --config-file=/home/kda/config.yaml
+WorkingDirectory=/root/kda
+ExecStart=/root/kda/chainweb-node --config-file=/root/kda/config.yaml
 Restart=always
 RestartSec=5
 LimitNOFILE=65536
@@ -281,9 +269,9 @@ WantedBy=multi-user.target
 EOF
 
 # --- HEALTH CHECK --- #
-touch /home/kda/health.sh
-chmod +x /home/kda/health.sh
-cat <<EOF > /home/kda/health.sh
+touch /root/kda/health.sh
+chmod +x /root/kda/health.sh
+cat <<EOF > /root/kda/health.sh
 #!/bin/bash
 status_code=\$(timeout 5s curl --write-out %{http_code} https://$whereami:443/chainweb/0.0/mainnet01/health-check --silent --output /dev/null)
 echo \$status_code
@@ -294,10 +282,8 @@ if [[ "\$status_code" -ne 200 ]]; then
 fi
 EOF
 
-chmod +x -R /home/kda/
-
 # --- HEALTH CHECK CRONTAB --- #
-echo "*/5 * * * * /home/kda/health.sh >/home/kda/health.out 2>/home/kda/health.err" >> newCrontab
+echo "*/5 * * * * /root/kda/health.sh >/root/kda/health.out 2>/root/kda/health.err" >> newCrontab
 crontab -u kda newCrontab >> $LOG_FILE 2>&1
 rm newCrontab >> $LOG_FILE 2>&1
 
@@ -315,8 +301,8 @@ echo "This may take a while..."
 # Send a stop message, just in case.
 systemctl stop kadena-node
 # No-op if it already exists.
-mkdir -p /home/kda/.local/share/chainweb-node/mainnet01/0/
-cd /home/kda/.local/share/chainweb-node/mainnet01/0/
+mkdir -p /root/kda/.local/share/chainweb-node/mainnet01/0/
+cd /root/kda/.local/share/chainweb-node/mainnet01/0/
 # Remove these, in case they were already there.
 rm -rf rocksDb sqlite
 # Fetch the snapshot.
@@ -328,6 +314,6 @@ clear
 # Installation Completed
 echo 'Installation completed!'
 echo 'Health checks are in place, and everything is automated from now on.'
-echo 'Type "sudo nano /home/kda/config.yaml" to edit your config if necessary.'
+echo 'Type "sudo nano /root/kda/config.yaml" to edit your config if necessary.'
 echo 'CTRL+x to save Y to confirm then "sudo systemctl restart kadena-node"'
 echo 'Type "journalctl -fu kadena-node" to see the node log.'
