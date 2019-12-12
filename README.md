@@ -1,24 +1,30 @@
-# Kadena one liner node installation
+# Kadena Node Installation
 
-### Installation 
-wget https://raw.githubusercontent.com/kadena-community/node-setup/master/installnode.sh && sudo bash installnode.sh
+**Note**: this guide assumes your machine is running Ubuntu, and that you have
+`sudo` privileges.
 
-Enter you domain name with an A record already pointed at your IP
+### Installation
 
-A log of the install is stored in /tmp/install.log if you get any error
+```bash
+wget https://raw.githubusercontent.com/kadena-community/node-setup/master/installnode.sh
+sudo bash installnode.sh
+```
 
-Monitoring your node
-------------------------------------------
-```Monitoring your node:
+For your `hostname`, enter your Domain Name or Public IP address.
 
-code 200 means GOOD
+A log of the install is stored in `/tmp/install.log` if there were any errors.
 
-monitor status
+### Monitoring your Node
+
+A code of `200` means GOOD.
+
+```bash
+# monitor status
 tail -f /home/kda/health.out
 
-monitor errors
+# monitor errors
 tail -f /home/kda/health.err
 
-monitor resource utilization
+# monitor resource utilization
 top
 ```
