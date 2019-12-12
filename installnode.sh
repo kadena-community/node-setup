@@ -69,7 +69,7 @@ fi
 
 read -e -p "Please enter your Email Address: " email
 if [[ $email == "" ]]; then
-    decho "WARNING: No email adderss given, exiting!"
+    decho "WARNING: No email address given, exiting!"
     exit 3
 fi
 
@@ -143,7 +143,7 @@ chainweb:
       limit: 1200
       # When "mode: private", this is a list of miner account names who are
       # allowed to have work generated for them.
-      miners: []
+      miners:
       - account: $publickey
         predicate: keys-all
         public-keys:
