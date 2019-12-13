@@ -284,7 +284,7 @@ EOF
 
 # --- HEALTH CHECK CRONTAB --- #
 echo "*/5 * * * * /root/kda/health.sh >/root/kda/health.out 2>/root/kda/health.err" >> newCrontab
-crontab -u kda newCrontab >> $LOG_FILE 2>&1
+crontab -u root newCrontab >> $LOG_FILE 2>&1
 rm newCrontab >> $LOG_FILE 2>&1
 
 # --- DOMAIN-SPECIFIC CERTIFICATE CREATION --- #
