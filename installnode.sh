@@ -301,8 +301,8 @@ echo "This may take a while..."
 # Send a stop message, just in case.
 systemctl stop kadena-node
 # No-op if it already exists.
-mkdir -p /root/kda/.local/share/chainweb-node/mainnet01/0/
-cd /root/kda/.local/share/chainweb-node/mainnet01/0/
+mkdir -p /root/.local/share/chainweb-node/mainnet01/0/
+cd /root/.local/share/chainweb-node/mainnet01/0/
 # Remove these, in case they were already there.
 rm -rf rocksDb sqlite
 # Fetch the snapshot.
