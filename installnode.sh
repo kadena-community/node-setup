@@ -269,23 +269,23 @@ WantedBy=multi-user.target
 EOF
 
 # --- HEALTH CHECK --- #
-touch /root/kda/health.sh
-chmod +x /root/kda/health.sh
-cat <<EOF > /root/kda/health.sh
-#!/bin/bash
-status_code=\$(timeout 5m curl --write-out %{http_code} https://$whereami:443/chainweb/0.0/mainnet01/health-check --silent --output /dev/null)
-echo \$status_code
-if [[ "\$status_code" -ne 200 ]]; then
-   echo "No response from API: Restarting the Node"
-   systemctl daemon-reload
-   systemctl restart kadena-node
-fi
-EOF
+# touch /root/kda/health.sh
+# chmod +x /root/kda/health.sh
+# cat <<EOF > /root/kda/health.sh
+# #!/bin/bash
+# status_code=\$(timeout 5m curl --write-out %{http_code} https://$whereami:443/chainweb/0.0/mainnet01/health-check --silent --output /dev/null)
+# echo \$status_code
+# if [[ "\$status_code" -ne 200 ]]; then
+#    echo "No response from API: Restarting the Node"
+#    systemctl daemon-reload
+#    systemctl restart kadena-node
+# fi
+# EOF
 
-# --- HEALTH CHECK CRONTAB --- #
-echo "*/5 * * * * /root/kda/health.sh >/root/kda/health.out 2>/root/kda/health.err" >> newCrontab
-crontab -u root newCrontab >> $LOG_FILE 2>&1
-rm newCrontab >> $LOG_FILE 2>&1
+# # --- HEALTH CHECK CRONTAB --- #
+# echo "*/5 * * * * /root/kda/health.sh >/root/kda/health.out 2>/root/kda/health.err" >> newCrontab
+# crontab -u root newCrontab >> $LOG_FILE 2>&1
+# rm newCrontab >> $LOG_FILE 2>&1
 
 # --- DOMAIN-SPECIFIC CERTIFICATE CREATION --- #
 certbot certonly --non-interactive --agree-tos -m $email --standalone --cert-name $whereami -d $whereami >> $LOG_FILE 2>&1
@@ -313,7 +313,7 @@ clear
 
 # Installation Completed
 echo 'Installation completed!'
-echo 'Health checks are in place, and everything is automated from now on.'
+# echo 'Health checks are in place, and everything is automated from now on.'
 echo 'Type "nano /root/kda/config.yaml" to edit your config if necessary.'
 echo 'CTRL+x to save, Y to confirm, then "systemctl restart kadena-node".'
 echo 'Type "journalctl -fu kadena-node" to see the node log.'

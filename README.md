@@ -14,18 +14,3 @@ sudo bash installnode.sh
 And follow the instructions.
 
 A log of the install is stored in `/tmp/install.log` if there were any errors.
-
-### Monitoring your Node
-
-A code of `200` means GOOD.
-
-```bash
-# monitor status
-tail -f /home/kda/health.out
-
-# monitor errors
-tail -f /home/kda/health.err
-
-# monitor resource utilization
-top
-```
