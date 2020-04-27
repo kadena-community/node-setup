@@ -4,11 +4,17 @@
 `sudo` privileges, that you've bought a proper Domain Name and are pointing it
 at the Public IP Address of your machine.
 
-### Installation
+### Installation 
 
 ```bash
 wget https://raw.githubusercontent.com/kadena-community/node-setup/master/installnode.sh
 sudo bash installnode.sh
+```
+### Installation without proper Domain Name
+
+```bash
+wget https://raw.githubusercontent.com/kadena-community/node-setup/master/installnodeip.sh
+sudo bash installnodeip.sh
 ```
 
 And follow the instructions.
