@@ -23,5 +23,5 @@ systemctl stop kadena-node
 rm chainweb-node
 wget https://github.com/kadena-io/chainweb-node/releases/download/1.8/chainweb-1.8.ghc-8.6.5.ubuntu-18.04.0efa2051.tar.gz
 tar -xvf chainweb-1.8.ghc-8.6.5.ubuntu-18.04.0efa2051.tar.gz
-systemctl ststart kadena-node
+systemctl start kadena-node
 ```
